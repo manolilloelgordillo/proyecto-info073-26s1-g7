@@ -1,0 +1,11 @@
+
+
+
+El avance realizado hasta el momento consta en:
+- Añadir los sprites placeholder de la manzana, paredes y suelo
+- Añadir Sprite placeholder de personaje (en este caso añadimos a spamton del juego deltarune pero próximamente lo vamos a cambiar a uno propio)
+- Añadir música y sonidos placeholder (estos después se cambiarán a sonidos propios y/o que tengan relación al juego)
+- Agregar más obstáculos
+- A diferencia de la versión anterior, ahora el jugador se puede mover “libremente” sin que siga avanzando automáticamente
+- Añadir limite de pasos (el limite de pasos es 30, si se sobrepasa la cantidad, pierdes
+La mayoría de estos cambios han sido sobre todo estéticos, cambiando al personaje y texturas, pero tambien añadir el movimiento libre con limite de pasos y mas obstaculos da una mayor libertad de creación de puzles
