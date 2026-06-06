@@ -30,11 +30,14 @@ OBSTACULO = 1
 JUGADOR = 2
 MANZANA = 3
 
+ 
+
 # Tamaño del tablero
 # Si se cambian estas constantes, se debe modificar la definición
 # del tablero que se encuentra en función reiniciar().
-FILAS = 15
-COLUMNAS = 15
+FILAS = 13
+COLUMNAS = 14
+MAX_PASOS = 25
 
 
 def aparecer_aleatorio(tablero, id_elem):
@@ -98,7 +101,8 @@ def poblar_tablero(tablero):
     Parámetros:
         - tablero: El tablero con sus posiciones actuales.
     """
-    aparecer_aleatorio(tablero, OBSTACULO)
+    for i in range(1, 30):
+        aparecer_aleatorio(tablero, OBSTACULO)
     aparecer_aleatorio(tablero, MANZANA)
 
 
@@ -114,6 +118,18 @@ def refrescar_tablero(screen, tablero):
     # Rellena la pantalla con el color gris, básicamente pintando
     # por encima de lo que estaba anteriormente.
     screen.fill("gray30")
+    wall = pygame.image.load ("assets/blocks/wall.jpeg ").convert ()
+    floor = pygame.image.load ("assets/blocks/floor.jpeg ").convert ()
+    apple = pygame.image.load ("assets/elements/apple.png").convert_alpha ()
+    mago = pygame.image.load ("assets/elements/mago.png").convert_alpha ()
+    #spamton es un placeholder para el jugador
+    spamton = pygame.image.load ("assets/elements/spamton.png").convert_alpha ()
+    #estos todavia no estan en uso
+    spamtondwn = pygame.image.load ("assets/elements/spamtondwn.png").convert_alpha()
+    spamtonup = pygame.image.load ("assets/elements/spamtonup.png").convert_alpha()
+    spamtonflip = pygame.image.load ("assets/elements/spamtonflip.png").convert_alpha()
+    
+
 
     # Podemos calcular el tamaño en pixeles que tendrá cada
     # casilla al dividir tanto la altura de la pantalla (screen.get_height())
@@ -127,39 +143,24 @@ def refrescar_tablero(screen, tablero):
 
     # Posición en eje "y" en unidad de píxeles.
     pos_y = 0
-
+  
     for i in range(FILAS):
         # Posición en eje "x" en unidad de píxeles.
         pos_x = 0
         for j in range(COLUMNAS):
+            screen.blit(floor, [pos_x, pos_y])
             if tablero[i][j] == OBSTACULO:
                 # Dibuja un rectángulo en la posición (pos_x, pos_y) y que sea
                 # de tamaño (ancho_elem, alto_elem) y color negro.
-                pygame.draw.rect(
-                    screen,
-                    "black",
-                    pygame.Rect((pos_x, pos_y), (ancho_elem, alto_elem)),
-                )
+                screen.blit(wall, [pos_x, pos_y])
+               
             elif tablero[i][j] == JUGADOR:
                 # Dibujamos un círculo verde en la posición (pos_x + radio, pos_y + radio),
                 # con un radio definido por la variable "radio" (ancho_elem / 2).
-                pygame.draw.circle(
-                    screen,
-                    "green",
-                    (pos_x + radio, pos_y + radio),
-                    radio,
-                )
+                screen.blit(mago, [pos_x, pos_y-25])
             elif tablero[i][j] == MANZANA:
-                pygame.draw.rect(
-                    screen,
-                    "red",
-                    # Acá reducimos el tamaño del rectángulo
-                    # para identificarlo más fácilmente
-                    pygame.Rect(
-                        (pos_x + 10, pos_y + 10),
-                        (ancho_elem - 20, alto_elem - 20),
-                    ),
-                )
+                screen.blit(apple, [pos_x, pos_y])
+          
 
             # Estamos recorriendo los píxeles de la pantalla, por lo que
             # debemos sumar el ancho y altura en pixeles de cada elemento que
@@ -189,12 +190,14 @@ def cambiar_direccion(keys, direccion_actual):
         # La tupla nos indica que horizontalmente (columnas) no hará nada (0) y
         # que verticalmente (filas) disminuirá el índice en el tablero (-1).
         return (0, -1)
+        
+              
 
     # Tecla S
     if keys[pygame.K_s]:
         # En este caso avanzará a través de las filas del tablero.
         return (0, 1)
-
+        
     # Tecla A
     if keys[pygame.K_a]:
         # Retrocede por las columnas del tablero.
@@ -210,7 +213,7 @@ def cambiar_direccion(keys, direccion_actual):
     return direccion_actual
 
 
-def avanzar(tablero, pos_jugador, direccion):
+def avanzar(tablero, pos_jugador, direccion, sonido_manzana):
     """
     Avanza el jugador un paso en la dirección dada.
 
@@ -243,11 +246,11 @@ def avanzar(tablero, pos_jugador, direccion):
     # Obtenemos el elemento que se encuentre en el tablero en la nueva posición del jugador.
     pos_elem = tablero[ind_nueva_fila][ind_nueva_col]
 
-    if pos_elem == OBSTACULO:
+    if pos_elem == OBSTACULO :
         return "derrota", pos_jugador
-
-    if pos_elem == MANZANA:
-        return "victoria", (ind_nueva_col, ind_nueva_fila)
+    if pos_elem == MANZANA :
+        sonido_manzana . play () # Reproducimos sonido
+        return "victoria", ( ind_nueva_col , ind_nueva_fila )
 
     # Movimiento normal, si es que no encontramos manzana ni obstáculo.
     tablero[ind_actual_fila][ind_actual_col] = VACIO
@@ -270,21 +273,21 @@ def reiniciar():
     # se debe modificar este arreglo de tablero con los valores correspondientes.
     # Esto puede ser mejorado usando dos bucles "for" anidados o comprensión de listas.
     tablero = [
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        
     ]
 
     # Usando dos bucles "for" anidados se haría de la siguiente manera:
@@ -351,9 +354,14 @@ def main():
     pos_jugador = (0, 0)
     direccion = (0, 0)
     tiempo_ultimo_mov = 0
+    pasos = 0
+
+
 
     mostrar_pantalla(screen, PANTALLA_INICIO)
-
+    sonido_manzana = pygame.mixer.Sound ("assets/sounds/apple_eat.mp3")
+    pygame.mixer.music.load ("assets/sounds/pluey.mp3")
+    pygame.mixer.music.play( -1) # Ejecutamos en bucle infinito
     # Este es el bucle principal del juego, todo lo que sucede en el juego
     # está aquí.
     while running:
@@ -373,6 +381,7 @@ def main():
                         tiempo_ultimo_mov = pygame.time.get_ticks()
                         estado = ESTADO_JUGANDO
                         refrescar_tablero(screen, tablero)
+                        pasos = 0
                     elif evento.key == pygame.K_i:
                         estado = ESTADO_INSTRUCCIONES
                         mostrar_pantalla(screen, PANTALLA_INSTRUCCIONES)
@@ -382,12 +391,13 @@ def main():
                     mostrar_pantalla(screen, PANTALLA_INICIO)
 
                 elif estado in (ESTADO_DERROTA, ESTADO_VICTORIA):
-                    if evento.key == pygame.K_r:
+                    if evento.key == pygame.K_SPACE:
                         tablero, pos_jugador = reiniciar()
                         direccion = (0, 0)
                         tiempo_ultimo_mov = pygame.time.get_ticks()
                         estado = ESTADO_JUGANDO
                         refrescar_tablero(screen, tablero)
+                        pasos = 0
 
                     if evento.key == pygame.K_ESCAPE:
                         estado = ESTADO_INICIO
@@ -401,8 +411,20 @@ def main():
 
             # La variable RETRASO hace que si no han pasado esa cantidad de ticks,
             # entonces no se avanzará en el tablero.
+            keys = pygame.key.get_pressed()
+            direccion = (0, 0)
+
+            if keys[pygame.K_w]:
+                direccion = (0, -1)
+            elif keys[pygame.K_s]:
+                direccion = (0, 1)
+            elif keys[pygame.K_a]:
+                direccion = (-1, 0)
+            elif keys[pygame.K_d]:
+                direccion = (1, 0)
+
             if direccion != (0, 0) and tiempo_actual - tiempo_ultimo_mov >= RETRASO:
-                resultado, pos_jugador = avanzar(tablero, pos_jugador, direccion)
+                resultado, pos_jugador = avanzar(tablero, pos_jugador, direccion, sonido_manzana)
 
                 if resultado == "derrota":
                     estado = ESTADO_DERROTA
@@ -412,7 +434,14 @@ def main():
                     mostrar_pantalla(screen, PANTALLA_VICTORIA)
                 else:
                     tiempo_ultimo_mov = tiempo_actual
-                    refrescar_tablero(screen, tablero)
+                    pasos +=1
+                    restantes=MAX_PASOS - pasos 
+                    pygame.display.set_caption(f"juego - Pasos restantes: {restantes}")
+                    if pasos >= MAX_PASOS:
+                        estado = ESTADO_DERROTA
+                        mostrar_pantalla(screen, PANTALLA_DERROTA)
+                    else:   
+                     refrescar_tablero(screen, tablero)
 
     pygame.quit()
 
