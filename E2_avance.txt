@@ -2,10 +2,11 @@
 
 
 El avance realizado hasta el momento consta en:
-- AÒadir los sprites placeholder de la manzana, paredes y suelo
-- AÒadir Sprite placeholder de personaje (en este caso aÒadimos a spamton del juego deltarune pero prÛximamente lo vamos a cambiar a uno propio)
-- AÒadir m˙sica y sonidos placeholder (estos despuÈs se cambiar·n a sonidos propios y/o que tengan relaciÛn al juego)
-- Agregar m·s obst·culos
-- A diferencia de la versiÛn anterior, ahora el jugador se puede mover ìlibrementeî sin que siga avanzando autom·ticamente
-- AÒadir limite de pasos (el limite de pasos es 30, si se sobrepasa la cantidad, pierdes
-La mayorÌa de estos cambios han sido sobre todo estÈticos, cambiando al personaje y texturas, pero tambien aÒadir el movimiento libre con limite de pasos y mas obstaculos da una mayor libertad de creaciÛn de puzles
+- A√±adir los sprites placeholder de la manzana, paredes y suelo
+- A√±adir Sprite placeholder de personaje (en este caso a√±adimos a spamton del juego deltarune pero pr√≥ximamente lo vamos a cambiar a uno propio)
+- A√±adir m√∫sica y sonidos placeholder (estos despu√©s se cambiar√°n a sonidos propios y/o que tengan relaci√≥n al juego)
+- Agregar m√°s obst√°culos
+- A diferencia de la versi√≥n anterior, ahora el jugador se puede mover ‚Äúlibremente‚Äù sin que siga avanzando autom√°ticamente
+- A√±adir limite de pasos (el limite de pasos es 25, si se sobrepasa la cantidad, pierdes
+La mayor√≠a de estos cambios han sido sobre todo est√©ticos, cambiando al personaje y texturas, pero tambien a√±adir el movimiento libre con limite de pasos y mas obstaculos da una mayor libertad de creaci√≥n de puzles
+las diferencias con la entrega anterior son que ahora, en vez de haber enemigos hay trampas de oso que da√±an al jugador, tambien el limite de pasos paso de 50 a 25 para a√±adir un poco mas de dificultad al juego, otro cambio es que al no haber enemigos, ya no hay contenedores de llaves, si no que estan alrededor del mapa de manera aleatoria y el ultimo cambio fue que las mascaras se reemplazaran por personas que van a seguir al jugador 
