@@ -31,7 +31,7 @@ JUGADOR = 2
 MANZANA = 3
 PUERTA = 4
 PUERTA_ABIERTA= 5
-
+SEGUIDOR = 6
  
 
 # Tamaño del tablero
@@ -39,7 +39,7 @@ PUERTA_ABIERTA= 5
 # del tablero que se encuentra en función reiniciar().
 FILAS = 13
 COLUMNAS = 14
-MAX_PASOS = 50
+MAX_PASOS = 60
 CANTIDAD_MANZANAS = 3
 ANCHO_VENTANA = 950
 ALTO_VENTANA= 660
@@ -49,6 +49,13 @@ ANCHO_PANEL = ANCHO_VENTANA - LADO_TABLERO
 def celdaapixel(column, fila):
     return column * LADO_TABLERO / COLUMNAS, fila * LADO_TABLERO / FILAS
 
+def transicion_tipo_ppt(screen, duracion=900):
+    fade = pygame.Surface(screen.get_size())
+    for a in range(0, 256, 15):
+        fade.set_alpha(a)
+        screen.blit(fade, (0, 0))
+        pygame.display.flip()
+        pygame.time.delay(duracion // 18)
 
 def aparecer_aleatorio(tablero, id_elem):
     """
@@ -133,20 +140,24 @@ def poblar_tablero(tablero):
         aparecer_aleatorio(tablero, OBSTACULO)
     for i in range(3):
         aparecer_aleatorio(tablero, MANZANA)
+    for i in range (4):
+        aparecer_aleatorio(tablero, SEGUIDOR)
     aparecer_aleatorio(tablero, PUERTA)
-def dibujar_panel(screen, fuente, largo, nivel):
+def dibujar_panel(screen, fuente, largo, nivel, seg_salvados):
     panel = pygame.Rect(LADO_TABLERO, 0, ANCHO_PANEL, ALTO_VENTANA)
-    x= LADO_TABLERO +24
+    x= LADO_TABLERO +10
     titulo = fuente.render("SNAKE", True, "white")
-    largo_txt = fuente.render(f"Largo: {largo}", True, "white") 
+    largo_txt = fuente.render(f"Seguidores actuales: {largo -1}", True, "white") 
     screen.blit(largo_txt, (x, 100))
     meta_txt = fuente.render(f"meta: {CANTIDAD_MANZANAS}", True, "yellow")
     screen.blit(meta_txt, (x, 140))
     nivel_txt = fuente.render(f"Nivel: {nivel}", True, "black")
     screen.blit(nivel_txt, (x, 180))
+    salvados_txt = fuente.render(f"Seguidores salvados: {seg_salvados}", True, "green")
+    screen.blit(salvados_txt, (x, 220))
    
 
-def refrescar_tablero(screen, tablero, pasos, img_jugador, posiciones_cuerpo, nivel, sobreescribe= None):
+def refrescar_tablero(screen, tablero, pasos, img_jugador, posiciones_cuerpo, nivel, imgs_seguidores, seg_totales, direccion, sobreescribe= None):
 
     """
     Dibuja el estado actual del tablero en la pantalla.
@@ -159,9 +170,9 @@ def refrescar_tablero(screen, tablero, pasos, img_jugador, posiciones_cuerpo, ni
     # Rellena la pantalla con el color gris, básicamente pintando
     # por encima de lo que estaba anteriormente.
     screen.fill("gray30")
-    wall = pygame.image.load ("assets/blocks/wall.jpeg ").convert ()
+    wall = pygame.image.load ("assets/blocks/daño.png ").convert_alpha ()
     floor = pygame.image.load ("assets/blocks/floor.jpeg ").convert ()
-    apple = pygame.image.load ("assets/elements/apple.png").convert_alpha ()
+    apple = pygame.image.load ("assets/elements/llave.png").convert_alpha ()
     puerta= pygame.image.load ("assets/blocks/puerta.jpeg").convert_alpha ()
     puerta_abierta = pygame.image.load ("assets/blocks/puerta_abierta.jpeg").convert_alpha()
 
@@ -198,7 +209,8 @@ def refrescar_tablero(screen, tablero, pasos, img_jugador, posiciones_cuerpo, ni
                 screen.blit(puerta, [pos_x, pos_y])
             elif tablero[i][j] == PUERTA_ABIERTA:
                 screen.blit(puerta_abierta, [pos_x, pos_y])
-
+            elif tablero[i][j] == SEGUIDOR:
+                screen.blit(imgs_seguidores[0], [pos_x, pos_y])
             # Estamos recorriendo los píxeles de la pantalla, por lo que
             # debemos sumar el ancho y altura en pixeles de cada elemento que
             # ya hayamos recorrido para avanzar al siguiente.
@@ -209,10 +221,21 @@ def refrescar_tablero(screen, tablero, pasos, img_jugador, posiciones_cuerpo, ni
         restantes = MAX_PASOS - pasos
         texto = fuente.render(f"Pasos restantes: {restantes}", True, (255, 255, 255))
         screen.blit(texto, (10, 10))
-    col_j, fila_j = posiciones_cuerpo
+    col_j, fila_j = posiciones_cuerpo [0]
     px_draw, py_draw = sobreescribe if sobreescribe else celdaapixel(col_j, fila_j)
-    screen.blit(img_jugador, [px_draw, py_draw - 25])    
-    dibujar_panel(screen, fuente, len(posiciones_cuerpo), nivel)
+    if direccion == (0,1): 
+        for i in range (1, len(posiciones_cuerpo)):
+            col_s, fila_s = posiciones_cuerpo[i]
+            px_s, py_s = celdaapixel(col_s, fila_s)
+            screen.blit(imgs_seguidores[i % 2], [px_s, py_s -25])
+        screen.blit(img_jugador, [px_draw, py_draw - 25])    
+    else:
+        screen.blit(img_jugador, [px_draw, py_draw - 25])  
+        for i in range (1, len(posiciones_cuerpo)):
+            col_s, fila_s = posiciones_cuerpo[i]
+            px_s, py_s = celdaapixel(col_s, fila_s)
+            screen.blit(imgs_seguidores[i % 2], [px_s, py_s -25])
+    dibujar_panel(screen, fuente, len(posiciones_cuerpo), nivel, seg_totales)
     # Refresca el contenido que se ve en pantalla.
     pygame.display.flip()
 
@@ -272,12 +295,13 @@ def avanzar(tablero, posiciones_cuerpo, direccion, sonido_manzana, contador_manz
         - (resultado, nueva_pos_jugador): Retorna el resultado que se obtiene
             al avanzar (derrota, victoria o "ok" (no cambia de pantalla)) y la nueva posición del jugador.
     """
+    pincho = pygame.mixer.Sound("assets/sounds/navajazo.mp3")
    
     # Obtenemos los componentes "x" e "y" de cada tupla recibida
     # con información de la dirección y posición del jugador.
     dir_col, dir_fila = direccion
     ind_actual_col, ind_actual_fila = (
-        posiciones_cuerpo  # Tupla (columna, fila) que representa los índices en el tablero.
+        posiciones_cuerpo[0]  # Tupla (columna, fila) que representa los índices en el tablero.
     )
 
     # Aplicamos la dirección a la posición del jugador.
@@ -292,7 +316,7 @@ def avanzar(tablero, posiciones_cuerpo, direccion, sonido_manzana, contador_manz
     pos_elem = tablero[ind_nueva_fila][ind_nueva_col]
 
     if pos_elem == OBSTACULO :
-        
+        pincho . play()        
         
         return "derrota", posiciones_cuerpo, contador_manzanas 
     if pos_elem == MANZANA :
@@ -302,21 +326,36 @@ def avanzar(tablero, posiciones_cuerpo, direccion, sonido_manzana, contador_manz
            for f in range (FILAS):
                for c in range(COLUMNAS):
                    if tablero[f][c] == PUERTA:
+                       puerta_Se_Abre = pygame.mixer.Sound("assets/sounds/puerta_abierta.mp3")
+                       puerta_Se_Abre . play ()
                        tablero[f][c]= PUERTA_ABIERTA
-    susvent = pygame.mixer.Sound("assets/sounds/susvent.mp3")
+    susvent = pygame.mixer.Sound("assets/sounds/puerta_ruidosa.mp3")
     if pos_elem == PUERTA:
         return "ushallnotpass", posiciones_cuerpo, contador_manzanas
     if pos_elem == PUERTA_ABIERTA:
         susvent . play()
-        return "siguiente_nivel", (ind_nueva_col, ind_actual_fila), contador_manzanas
+        return "siguiente_nivel", posiciones_cuerpo, contador_manzanas
        
 
 
     # Movimiento normal, si es que no encontramos manzana ni obstáculo.
+    # Guardamos la posición de la cola antes de mover (por si se agrega un seguidor)
+    ind_cola_col, ind_cola_fila = posiciones_cuerpo[-1]
+
+    # Movemos cada segmento a la posición del segmento que tiene delante
+    for i in range(len(posiciones_cuerpo) - 1, 0, -1):
+        posiciones_cuerpo[i] = posiciones_cuerpo[i - 1]
+
+    # Movimiento normal, si es que no encontramos manzana ni obstáculo.
     tablero[ind_actual_fila][ind_actual_col] = VACIO
     tablero[ind_nueva_fila][ind_nueva_col] = JUGADOR
+    posiciones_cuerpo[0] = (ind_nueva_col, ind_nueva_fila)
 
-    return "ok", (ind_nueva_col, ind_nueva_fila), contador_manzanas
+    if pos_elem == SEGUIDOR:
+        posiciones_cuerpo.append((ind_cola_col, ind_cola_fila))
+
+
+    return "ok", posiciones_cuerpo, contador_manzanas
 
 
 def reiniciar():
@@ -369,7 +408,7 @@ def reiniciar():
     # Colocamos al jugador en una posición aleatoria.
     posiciones_cuerpo = [aparecer_aleatorio(tablero, JUGADOR)]
 
-    return tablero, posiciones_cuerpo[0]
+    return tablero, posiciones_cuerpo
 
 
 def mostrar_pantalla(screen, nombre_archivo):
@@ -420,16 +459,20 @@ def main():
     nivel = 1
     animacion = None
     direccion_anterior = (0, 0)
-
+    egg = ""
+    seg_totales = 0
 
 
     mostrar_pantalla(screen, PANTALLA_INICIO)
-    sonido_manzana = pygame.mixer.Sound ("assets/sounds/apple_eat.mp3")
+    sonido_manzana = pygame.mixer.Sound ("assets/sounds/agarrar_llave.mp3")
     bwomp = pygame.mixer.Sound("assets/sounds/bwomp.mp3")
     tadan = pygame.mixer.Sound("assets/sounds/tadan.mp3")
-    susvent = pygame.mixer.Sound("assets/sounds/susvent.mp3")
-    pygame.mixer.music.load ("assets/sounds/pluey.mp3")
-    pygame.mixer.music.play( -1) # Ejecutamos en bucle infinito
+    susvent = pygame.mixer.Sound("assets/sounds/puerta_ruidosa.mp3")
+    puerta_seabre =pygame.mixer.Sound("assets/sounds/puerta_abierta.mp3")
+    pincho = pygame.mixer.Sound("assets/sounds/navajazo.mpeg")
+    
+    pygame.mixer.music.load ("assets/sounds/musicadelterraria.mpeg")
+    pygame.mixer.music.play( 0) # Ejecutamos en bucle infinito
     # Este es el bucle principal del juego, todo lo que sucede en el juego
     # está aquí.
     mostrar_pantalla(screen, PANTALLA_INICIO)
@@ -464,6 +507,14 @@ def main():
 
             # Si es que se presiona alguna tecla.
             if evento.type == pygame.KEYDOWN:
+                #si es que el jugador quiere sentirse mas 𝓟𝓵𝓾𝓮𝔂
+                if estado == ESTADO_INICIO and evento.unicode.isalpha():
+                    egg += evento.unicode.lower()
+                    egg = egg[-5:] #cinco letras
+                    if egg == "pluey": 
+                        pygame.mixer.music.load ("assets/sounds/pluey.mp3")
+                        pygame.mixer.music.play(-1)
+                        egg = ""
                 if estado == ESTADO_INICIO:
                     if evento.key == pygame.K_SPACE:
                         tablero, posiciones_cuerpo = reiniciar()
@@ -473,13 +524,12 @@ def main():
                         tiempo_ultimo_mov = pygame.time.get_ticks()
                         estado = ESTADO_JUGANDO
                         pasos = 0
-                        refrescar_tablero(screen, tablero, pasos, img_actual, posiciones_cuerpo, nivel)
+                        refrescar_tablero(screen, tablero, pasos, img_actual, posiciones_cuerpo, nivel, imgs_seguidores, seg_totales, direccion)
                         contador_manzanas = 0
                         pasos = 0
                     elif evento.key == pygame.K_i:
                         estado = ESTADO_INSTRUCCIONES
                         mostrar_pantalla(screen, PANTALLA_INSTRUCCIONES)
-
                 elif estado == ESTADO_INSTRUCCIONES:
                     estado = ESTADO_INICIO
                     mostrar_pantalla(screen, PANTALLA_INICIO)
@@ -487,14 +537,16 @@ def main():
                 elif estado in (ESTADO_DERROTA, ESTADO_VICTORIA):
                     if evento.key == pygame.K_SPACE:
                         tablero, posiciones_cuerpo = reiniciar()
-                        pygame.mixer.music.play(-1)
+                        
+                        pygame.mixer.music.play(0)
                         direccion = (0, 0)
                         tiempo_ultimo_mov = pygame.time.get_ticks()
                         estado = ESTADO_JUGANDO
                         pasos = 0
                         contador_manzanas = 0
                         nivel = 1
-                        refrescar_tablero(screen, tablero, pasos, img_actual, posiciones_cuerpo, nivel)
+                        seg_totales = 0
+                        refrescar_tablero(screen, tablero, pasos, img_actual, posiciones_cuerpo, nivel, imgs_seguidores, seg_totales, direccion)
                         
 
                     if evento.key == pygame.K_ESCAPE:
@@ -510,7 +562,7 @@ def main():
                 t = min(t + 0.2, 1.0)
                 px = ox + (dx - ox) * t
                 py = oy + (dy - oy) * t
-                refrescar_tablero(screen, tablero, pasos, img_actual, posiciones_cuerpo, nivel, (px, py))
+                refrescar_tablero(screen, tablero, pasos, img_actual, posiciones_cuerpo, nivel, imgs_seguidores, seg_totales, direccion, (px, py))
                 animacion = (ox, oy, dx, dy, t) if t < 1.0 else None
                 if t < 1.0:
                     continue 
@@ -531,7 +583,7 @@ def main():
                 direccion = (1, 0)
 
             if direccion != (0, 0) and tiempo_actual - tiempo_ultimo_mov >= RETRASO:
-                col_antes, fila_antes = posiciones_cuerpo
+                col_antes, fila_antes = posiciones_cuerpo[0]
                 resultado, posiciones_cuerpo, contador_manzanas = avanzar(tablero, posiciones_cuerpo, direccion, sonido_manzana, contador_manzanas, bwomp)
                 
 
@@ -543,19 +595,21 @@ def main():
                     mostrar_pantalla(screen, PANTALLA_DERROTA)
                    
                 elif resultado == "siguiente_nivel":
+                    seg_totales += len(posiciones_cuerpo) -1
                     if nivel >= 4:
                         estado = ESTADO_VICTORIA
                         pygame.mixer.music.stop()
                         tadan . play ()
                         mostrar_pantalla(screen, PANTALLA_VICTORIA)
                     else:
+                        transicion_tipo_ppt(screen)
                         nivel = nivel + 1
                         tablero, posiciones_cuerpo = reiniciar()
                         direccion = (0, 0)
                         tiempo_ultimo_mov = pygame.time.get_ticks()
                         pasos = 0
                         contador_manzanas = 0
-                        refrescar_tablero(screen, tablero, pasos, img_actual, posiciones_cuerpo, nivel)
+                        refrescar_tablero(screen, tablero, pasos, img_actual, posiciones_cuerpo, nivel, imgs_seguidores, seg_totales, direccion)
                 elif resultado == "ushallnotpass":
                     pass
                 else:
@@ -575,7 +629,7 @@ def main():
                         estado = ESTADO_DERROTA
                         mostrar_pantalla(screen, PANTALLA_DERROTA)
                     else:  
-                        animacion = (*celdaapixel(col_antes,fila_antes), *celdaapixel(*posiciones_cuerpo), 0.0)
+                        animacion = (*celdaapixel(col_antes,fila_antes), *celdaapixel(*posiciones_cuerpo[0]), 0.0)
     pygame.quit()
 
 
